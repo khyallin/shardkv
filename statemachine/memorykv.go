@@ -34,10 +34,13 @@ func NewMemoryKV(gid model.Tgid, me int) *MemoryKV {
 		shardNums: make([]model.Tnum, model.NShards),
 		shardExts: make([]bool, model.NShards),
 	}
+	cfg := config.DefaultConfig()
 	for i := 0; i < model.NShards; i++ {
 		kv.data[i] = make(map[string]Record)
 		kv.shardNums[i] = config.NumFirst
-		kv.shardExts[i] = (gid == config.Gid1)
+		if gid == config.Gid0 || gid == cfg.Shards[i] {
+			kv.shardExts[i] = true
+		}
 	}
 	return kv
 }

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   server-0-0:
     image: khyallin/shardkv-server

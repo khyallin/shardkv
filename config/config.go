@@ -40,7 +40,7 @@ func DefaultConfig() *Config {
 }
 
 func (cfg *Config) String() string {
-	b, err := json.MarshalIndent(cfg, "", "  ")
+	b, err := json.Marshal(cfg)
 	if err != nil {
 		log.Fatalf("Marshal err %v", err)
 	}

@@ -1,6 +1,7 @@
 package group
 
 import (
+	"encoding/gob"
 	"sync/atomic"
 
 	"github.com/khyallin/shardkv/model"
@@ -95,6 +96,17 @@ func (kv *KVServer) killed() bool {
 }
 
 func MakeKVServer(servers []string, gid model.Tgid, me int, persister *raft.Persister, maxraftstate int) (*KVServer, raft.Raft) {
+	gob.Register(&rpc.GetArgs{})
+	gob.Register(&rpc.GetReply{})
+	gob.Register(&rpc.PutArgs{})
+	gob.Register(&rpc.PutReply{})
+	gob.Register(&rpc.FreezeShardArgs{})
+	gob.Register(&rpc.FreezeShardReply{})
+	gob.Register(&rpc.InstallShardArgs{})
+	gob.Register(&rpc.InstallShardReply{})
+	gob.Register(&rpc.DeleteShardArgs{})
+	gob.Register(&rpc.DeleteShardReply{})
+
 	sm := statemachine.NewMemoryKV(gid, me)
 	kv := &KVServer{
 		me:  me,

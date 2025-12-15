@@ -8,6 +8,7 @@ package raft
 
 import (
 	"bytes"
+	"encoding/gob"
 	"math/rand"
 	"sync"
 	"sync/atomic"
@@ -728,6 +729,13 @@ func (rf *raft) advanceCommitIndex() {
 // Make() must return quickly, so it should start goroutines
 // for any long-running work.
 func Make(servers []string, me int, persister *Persister, applyCh chan ApplyMsg) *raft {
+	gob.Register(AppendEntriesArgs{})
+	gob.Register(AppendEntriesReply{})
+	gob.Register(RequestVoteArgs{})
+	gob.Register(RequestVoteReply{})
+	gob.Register(InstallSnapshotArgs{})
+	gob.Register(InstallSnapshotReply{})
+
 	rf := &raft{
 		peers:     make([]*rpc.Client, len(servers)),
 		persister: persister,

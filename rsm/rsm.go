@@ -1,6 +1,7 @@
 package rsm
 
 import (
+	"encoding/gob"
 	"sync"
 	"time"
 
@@ -52,6 +53,8 @@ type RSM struct {
 // MakeRSM() must return quickly, so it should start goroutines for
 // any long-running work.
 func MakeRSM(servers []string, me int, persister *raft.Persister, maxraftstate int, sm StateMachine) *RSM {
+	gob.Register(Op{})
+
 	rsm := &RSM{
 		me:           me,
 		maxraftstate: maxraftstate,
