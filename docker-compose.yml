@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  server-0-0:
+    image: khyallin/shardkv-server
+    command: ["/server", "-gid", "0", "-me", "0"]
+    container_name: shardkv-server-0-0
+    networks:
+      shardkv_net:
+        ipv4_address: 172.20.0.10
+
+  server-0-1:
+    image: khyallin/shardkv-server
+    command: ["/server", "-gid", "0", "-me", "1"]
+    container_name: shardkv-server-0-1
+    networks:
+      shardkv_net:
+        ipv4_address: 172.20.0.11
+
+  server-0-2:
+    image: khyallin/shardkv-server
+    command: ["/server", "-gid", "0", "-me", "2"]
+    container_name: shardkv-server-0-2
+    networks:
+      shardkv_net:
+        ipv4_address: 172.20.0.12
+
+  server-1-0:
+    image: khyallin/shardkv-server
+    command: ["/server", "-gid", "1", "-me", "0"]
+    container_name: shardkv-server-1-0
+    networks:
+      shardkv_net:
+        ipv4_address: 172.20.0.13
+
+  server-1-1:
+    image: khyallin/shardkv-server
+    command: ["/server", "-gid", "1", "-me", "1"]
+    container_name: shardkv-server-1-1
+    networks:
+      shardkv_net:
+        ipv4_address: 172.20.0.14
+
+  server-1-2:
+    image: khyallin/shardkv-server
+    command: ["/server", "-gid", "1", "-me", "2"]
+    container_name: shardkv-server-1-2
+    networks:
+      shardkv_net:
+        ipv4_address: 172.20.0.15
+
+networks:
+  shardkv_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
