@@ -6,7 +6,6 @@ import (
 	"github.com/khyallin/shardkv/config"
 	"github.com/khyallin/shardkv/group"
 	"github.com/khyallin/shardkv/model"
-	"github.com/khyallin/shardkv/raft"
 	"github.com/khyallin/shardkv/rpc"
 )
 
@@ -19,8 +18,7 @@ func main() {
 	if *gid == -1 || *me == -1 {
 		panic("gid & me must be specified")
 	}
-	persister := raft.MakePersister()
-	kv, rf := group.MakeKVServer(cfg.Groups[model.Tgid(*gid)], model.Tgid(*gid), *me, persister, config.Maxraftstate)
+	kv, rf := group.MakeKVServer(cfg.Groups[model.Tgid(*gid)], model.Tgid(*gid), *me, config.Maxraftstate)
 	svr.Register("KVServer", kv)
 	svr.Register("Raft", rf)
 	svr.Start()

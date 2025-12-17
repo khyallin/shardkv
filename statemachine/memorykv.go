@@ -2,13 +2,13 @@ package statemachine
 
 import (
 	"bytes"
+	"encoding/gob"
 	"log"
 
 	"github.com/khyallin/shardkv/config"
 	"github.com/khyallin/shardkv/model"
 	"github.com/khyallin/shardkv/rpc"
 	"github.com/khyallin/shardkv/util"
-	"github.com/khyallin/shardkv/util/codec"
 )
 
 type Tversion int
@@ -64,7 +64,7 @@ func (kv *MemoryKV) DoOp(req any) any {
 
 func (kv *MemoryKV) Snapshot() []byte {
 	w := new(bytes.Buffer)
-	e := codec.NewEncoder(w)
+	e := gob.NewEncoder(w)
 	e.Encode(kv.data)
 	e.Encode(kv.shardNums)
 	e.Encode(kv.shardExts)
@@ -74,7 +74,7 @@ func (kv *MemoryKV) Snapshot() []byte {
 
 func (kv *MemoryKV) Restore(buffer []byte) {
 	r := bytes.NewBuffer(buffer)
-	d := codec.NewDecoder(r)
+	d := gob.NewDecoder(r)
 	var data []map[string]Record
 	var shardNums []model.Tnum
 	var shardExts []bool
@@ -212,7 +212,7 @@ func (kv *MemoryKV) freezeShard(shard model.Tshid, num model.Tnum) ([]byte, mode
 
 	kv.shardExts[shard] = false
 	b := new(bytes.Buffer)
-	e := codec.NewEncoder(b)
+	e := gob.NewEncoder(b)
 	e.Encode(kv.data[shard])
 	log.Printf("MemoryKV%d-%d.FreezeShard()|OK|shard=%d|num=%d", kv.gid, kv.me, shard, num)
 	return b.Bytes(), num, model.OK
@@ -235,7 +235,7 @@ func (kv *MemoryKV) installShard(shard model.Tshid, state []byte, num model.Tnum
 	} else {
 		var shardData map[string]Record
 		b := bytes.NewBuffer(state)
-		d := codec.NewDecoder(b)
+		d := gob.NewDecoder(b)
 		if d.Decode(&shardData) == nil {
 			kv.data[shard] = shardData
 		}

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/khyallin/shardkv/model"
+	"github.com/khyallin/shardkv/persist"
 	"github.com/khyallin/shardkv/raft"
 )
 
@@ -52,7 +53,7 @@ type RSM struct {
 //
 // MakeRSM() must return quickly, so it should start goroutines for
 // any long-running work.
-func MakeRSM(servers []string, me int, persister *raft.Persister, maxraftstate int, sm StateMachine) *RSM {
+func MakeRSM(servers []string, me int, maxraftstate int, sm StateMachine) *RSM {
 	gob.Register(Op{})
 
 	rsm := &RSM{
@@ -64,12 +65,12 @@ func MakeRSM(servers []string, me int, persister *raft.Persister, maxraftstate i
 		notifyCh: make(map[int]chan any),
 	}
 
-	snapshot := persister.ReadSnapshot()
-	if len(snapshot) > 0 {
-		rsm.sm.Restore(snapshot)
+	snapshot := persist.NewBlock("snapshot")
+	if snapshot.Size() > 0 {
+		rsm.sm.Restore(snapshot.Read())
 	}
 
-	rsm.rf = raft.Make(servers, me, persister, rsm.applyCh)
+	rsm.rf = raft.Make(servers, me, snapshot, rsm.applyCh)
 	go rsm.reader()
 
 	return rsm

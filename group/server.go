@@ -95,7 +95,7 @@ func (kv *KVServer) killed() bool {
 	return z == 1
 }
 
-func MakeKVServer(servers []string, gid model.Tgid, me int, persister *raft.Persister, maxraftstate int) (*KVServer, raft.Raft) {
+func MakeKVServer(servers []string, gid model.Tgid, me int, maxraftstate int) (*KVServer, raft.Raft) {
 	gob.Register(&rpc.GetArgs{})
 	gob.Register(&rpc.GetReply{})
 	gob.Register(&rpc.PutArgs{})
@@ -110,7 +110,7 @@ func MakeKVServer(servers []string, gid model.Tgid, me int, persister *raft.Pers
 	sm := statemachine.NewMemoryKV(gid, me)
 	kv := &KVServer{
 		me:  me,
-		rsm: rsm.MakeRSM(servers, me, persister, maxraftstate, sm),
+		rsm: rsm.MakeRSM(servers, me, maxraftstate, sm),
 	}
 	return kv, kv.rsm.Raft()
 }
