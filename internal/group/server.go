@@ -5,7 +5,7 @@ import (
 	"sync/atomic"
 
 	"github.com/khyallin/shardkv/api"
-	"github.com/khyallin/shardkv/internal/config"
+	"github.com/khyallin/shardkv/config"
 	"github.com/khyallin/shardkv/internal/rpc"
 	"github.com/khyallin/shardkv/internal/rsm"
 	"github.com/khyallin/shardkv/internal/statemachine"
@@ -95,7 +95,7 @@ func (kv *KVServer) killed() bool {
 	return z == 1
 }
 
-func MakeKVServer(svr *rpc.Server, servers []string, gid config.Tgid, me int, maxraftstate int) *KVServer {
+func MakeKVServer(servers []string, gid config.Tgid, me int, maxraftstate int) []Service {
 	gob.Register(&api.GetArgs{})
 	gob.Register(&api.GetReply{})
 	gob.Register(&api.PutArgs{})
@@ -110,8 +110,7 @@ func MakeKVServer(svr *rpc.Server, servers []string, gid config.Tgid, me int, ma
 	sm := statemachine.NewMemoryKV(gid, me)
 	kv := &KVServer{
 		me:  me,
-		rsm: rsm.MakeRSM(svr, servers, me, maxraftstate, sm),
+		rsm: rsm.MakeRSM(servers, me, maxraftstate, sm),
 	}
-	svr.Register("KVServer", kv)
-	return kv
+	return []Service{kv, kv.rsm.Raft()}
 }

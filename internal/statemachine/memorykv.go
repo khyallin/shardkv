@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/khyallin/shardkv/api"
-	"github.com/khyallin/shardkv/internal/config"
+	"github.com/khyallin/shardkv/config"
 	"github.com/khyallin/shardkv/internal/rpc"
 )
 
@@ -33,11 +33,10 @@ func NewMemoryKV(gid config.Tgid, me int) *MemoryKV {
 		shardNums: make([]config.Tnum, config.NShards),
 		shardExts: make([]bool, config.NShards),
 	}
-	cfg := config.DefaultConfig()
 	for i := 0; i < config.NShards; i++ {
 		kv.data[i] = make(map[string]Record)
 		kv.shardNums[i] = config.NumFirst
-		if gid == config.Gid0 || gid == cfg.Shards[i] {
+		if gid == config.Gid0 {
 			kv.shardExts[i] = true
 		}
 	}

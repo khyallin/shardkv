@@ -1,41 +1,97 @@
 package main
 
 import (
-	"encoding/json"
+	"io"
 	"log"
+	"net/http"
 	"os"
-	"strconv"
+	"sync"
+	"time"
 
-	"github.com/khyallin/shardkv/internal/config"
+	"github.com/gin-gonic/gin"
+	"github.com/khyallin/shardkv/config"
 	"github.com/khyallin/shardkv/internal/group"
 	"github.com/khyallin/shardkv/internal/rpc"
 )
 
-func startServer() {
-	gid, me, svrs := getArgs()
+type State int
 
-	svr := rpc.NewServer()
-	_ = group.MakeKVServer(svr, svrs, gid, me, config.Maxraftstate)
-	svr.Start()
+const (
+	Initial State = iota
+	Running
+	Shutdown
+)
+
+type Server struct {
+	*sync.Mutex
+	state    State
+	svr      *rpc.Server
+	services []group.Service
 }
 
-func getArgs() (config.Tgid, int, []string) {
-	gid, err := strconv.Atoi(os.Getenv("GID"))
-	if err != nil {
-		log.Fatal("Invalid GID")
+func NewServer() *Server {
+	return &Server{
+		state: Initial,
+		svr:   rpc.NewServer(),
 	}
-	me, err := strconv.Atoi(os.Getenv("ME"))
-	if err != nil {
-		log.Fatal("Invalid ME")
+}
+
+func (s *Server) Ping(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "ok"})
+}
+
+func (s *Server) Shutdown(c *gin.Context) {
+	s.Lock()
+	defer s.Unlock()
+
+	if s.state == Running {
+		go func() {
+			s.Lock()
+			defer s.Unlock()
+
+			s.state = Shutdown
+			for _, service := range s.services {
+				service.Kill()
+			}
+			time.Sleep(time.Second)
+			os.Exit(0)
+		}()
 	}
-	svrs := os.Getenv("SVRS")
-	if svrs == "" {
-		return config.Tgid(gid), me, []string{}
+	c.JSON(http.StatusOK, gin.H{"message": "ok"})
+}
+
+type StartRequest struct {
+	GroupId int      `json:"group_id"`
+	Me      int      `json:"me"`
+	Servers []string `json:"servers"`
+}
+
+func (s *Server) Start(c *gin.Context) {
+	s.Lock()
+	defer s.Unlock()
+
+	if s.state == Initial {
+		s.state = Running
+		var req StartRequest
+		if err := c.BindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+			return
+		}
+		s.services = group.MakeKVServer(req.Servers, config.Tgid(req.GroupId), req.Me, config.Maxraftstate)
+		s.svr.Start()
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "ok"})
+}
+
+func startServer(args []string) {
+	if os.Getenv("DEBUG") != "1" {
+		log.SetOutput(io.Discard)
 	}
 
-	var s []string
-	if err := json.Unmarshal([]byte(svrs), &s); err != nil {
-		log.Fatalf("invalid SVRS: %v, raw=%q", err, svrs)
-	}
-	return config.Tgid(gid), me, s
+	svr := NewServer()
+	router := gin.Default()
+	router.GET("/ping", svr.Ping)
+	router.POST("/start", svr.Start)
+	router.POST("/shutdown", svr.Shutdown)
+	router.Run()
 }

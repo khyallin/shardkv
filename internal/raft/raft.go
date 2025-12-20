@@ -8,7 +8,6 @@ package raft
 
 import (
 	"encoding/gob"
-	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -666,7 +665,7 @@ func (rf *raft) advanceCommitIndex() {
 // tester or service expects Raft to send ApplyMsg messages.
 // Make() must return quickly, so it should start goroutines
 // for any long-running work.
-func Make(svr *rpc.Server, servers []string, me int, snapshot *persist.Block, applyCh chan ApplyMsg) *raft {
+func Make(servers []string, me int, snapshot *persist.Block, applyCh chan ApplyMsg) *raft {
 	gob.Register(AppendEntriesArgs{})
 	gob.Register(AppendEntriesReply{})
 	gob.Register(RequestVoteArgs{})
@@ -695,7 +694,6 @@ func Make(svr *rpc.Server, servers []string, me int, snapshot *persist.Block, ap
 		nextIndex:  make([]int, len(servers)),
 		matchIndex: make([]int, len(servers)),
 	}
-	svr.Register("Raft", rf)
 
 	rf.commitIndex = rf.log.Base()
 	rf.lastApplied = rf.log.Base()
@@ -714,36 +712,4 @@ func Make(svr *rpc.Server, servers []string, me int, snapshot *persist.Block, ap
 	}
 
 	return rf
-}
-
-// timeout utils
-
-func electionTimeout() time.Duration {
-	ms := 700 + rand.Intn(300)
-	return time.Duration(ms) * time.Millisecond
-}
-
-func (rf *raft) resetElectionTimer() {
-	if !rf.electionTimer.Stop() {
-		select {
-		case <-rf.electionTimer.C:
-		default:
-		}
-	}
-	rf.electionTimer.Reset(electionTimeout())
-}
-
-func heartbeatTimeout() time.Duration {
-	ms := 100
-	return time.Duration(ms) * time.Millisecond
-}
-
-func (rf *raft) resetHeartbeatTimer() {
-	if !rf.heartbeatTimer.Stop() {
-		select {
-		case <-rf.heartbeatTimer.C:
-		default:
-		}
-	}
-	rf.heartbeatTimer.Reset(heartbeatTimeout())
 }

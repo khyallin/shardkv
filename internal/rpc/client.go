@@ -5,7 +5,7 @@ import (
 	"net/rpc"
 	"sync"
 
-	"github.com/khyallin/shardkv/internal/config"
+	"github.com/khyallin/shardkv/config"
 )
 
 type Client struct {

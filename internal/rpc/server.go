@@ -5,7 +5,7 @@ import (
 	"net"
 	"net/rpc"
 
-	"github.com/khyallin/shardkv/internal/config"
+	"github.com/khyallin/shardkv/config"
 )
 
 type Server struct {

@@ -36,10 +36,6 @@ func MakeConfig() *Config {
 	return c
 }
 
-func DefaultConfig() *Config {
-	return defaultConfig.Copy()
-}
-
 func (cfg *Config) String() string {
 	b, err := json.Marshal(cfg)
 	if err != nil {

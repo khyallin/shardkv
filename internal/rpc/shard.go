@@ -2,7 +2,7 @@ package rpc
 
 import (
 	"github.com/khyallin/shardkv/api"
-	"github.com/khyallin/shardkv/internal/config"
+	"github.com/khyallin/shardkv/config"
 )
 
 type FreezeShardArgs struct {

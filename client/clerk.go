@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/khyallin/shardkv/api"
-	"github.com/khyallin/shardkv/internal/config"
-	"github.com/khyallin/shardkv/internal/controller"
+	"github.com/khyallin/shardkv/config"
+	"github.com/khyallin/shardkv/controller"
 	"github.com/khyallin/shardkv/internal/group"
 	"github.com/khyallin/shardkv/internal/rpc"
 )
@@ -25,10 +25,10 @@ type Clerk struct {
 	grpClerks map[config.Tgid]*group.Clerk
 }
 
-func MakeClerk() *Clerk {
+func MakeClerk(servers []string) *Clerk {
 	ck := &Clerk{
 		cfg:       nil,
-		ctrler:    controller.MakeController(),
+		ctrler:    controller.MakeController(servers),
 		grpClerks: make(map[config.Tgid]*group.Clerk),
 	}
 	return ck

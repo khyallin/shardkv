@@ -1,0 +1,2 @@
+image:
+	sudo docker image build -t khyallin/shardkv .

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/khyallin/shardkv/api"
-	"github.com/khyallin/shardkv/internal/config"
+	"github.com/khyallin/shardkv/config"
 	"github.com/khyallin/shardkv/internal/rpc"
 )
 

@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/khyallin/shardkv/api"
-	"github.com/khyallin/shardkv/internal/config"
+	"github.com/khyallin/shardkv/config"
 	"github.com/khyallin/shardkv/internal/group"
 )
 
@@ -14,10 +14,9 @@ type Controller struct {
 }
 
 // Make a Controller, which stores its state in a kvsrv.
-func MakeController() *Controller {
-	cfg := config.DefaultConfig()
+func MakeController(servers []string) *Controller {
 	sck := &Controller{
-		Clerk:     group.MakeClerk(config.Gid0, cfg.Groups[config.Gid0]),
+		Clerk:     group.MakeClerk(config.Gid0, servers),
 		grpClerks: make(map[config.Tgid]*group.Clerk),
 	}
 	return sck
