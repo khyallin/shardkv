@@ -2,6 +2,7 @@ package config
 
 const (
 	Port         = ":8000"
+	AdminPort    = ":8008"
 	Maxraftstate = 1024 * 1024 * 10 // 10MB
 	NShards      = 12
 )

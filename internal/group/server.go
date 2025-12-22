@@ -6,6 +6,7 @@ import (
 
 	"github.com/khyallin/shardkv/api"
 	"github.com/khyallin/shardkv/config"
+	"github.com/khyallin/shardkv/internal/raft"
 	"github.com/khyallin/shardkv/internal/rpc"
 	"github.com/khyallin/shardkv/internal/rsm"
 	"github.com/khyallin/shardkv/internal/statemachine"
@@ -95,7 +96,7 @@ func (kv *KVServer) killed() bool {
 	return z == 1
 }
 
-func MakeKVServer(servers []string, gid config.Tgid, me int, maxraftstate int) []Service {
+func MakeKVServer(servers []string, gid config.Tgid, me int, maxraftstate int) (*KVServer, raft.Raft) {
 	gob.Register(&api.GetArgs{})
 	gob.Register(&api.GetReply{})
 	gob.Register(&api.PutArgs{})
@@ -112,5 +113,5 @@ func MakeKVServer(servers []string, gid config.Tgid, me int, maxraftstate int) [
 		me:  me,
 		rsm: rsm.MakeRSM(servers, me, maxraftstate, sm),
 	}
-	return []Service{kv, kv.rsm.Raft()}
+	return kv, kv.rsm.Raft()
 }

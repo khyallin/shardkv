@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/khyallin/shardkv/config"
 	"github.com/khyallin/shardkv/internal/group"
+	"github.com/khyallin/shardkv/internal/raft"
 	"github.com/khyallin/shardkv/internal/rpc"
 )
 
@@ -24,9 +25,10 @@ const (
 
 type Server struct {
 	*sync.Mutex
-	state    State
-	svr      *rpc.Server
-	services []group.Service
+	state State
+	svr   *rpc.Server
+	kv    *group.KVServer
+	rf    raft.Raft
 }
 
 func NewServer() *Server {
@@ -50,9 +52,8 @@ func (s *Server) Shutdown(c *gin.Context) {
 			defer s.Unlock()
 
 			s.state = Shutdown
-			for _, service := range s.services {
-				service.Kill()
-			}
+			s.kv.Kill()
+			s.rf.Kill()
 			time.Sleep(time.Second)
 			os.Exit(0)
 		}()
@@ -74,10 +75,12 @@ func (s *Server) Start(c *gin.Context) {
 		s.state = Running
 		var req StartRequest
 		if err := c.BindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+			c.JSON(http.StatusBadRequest, gin.H{"message": "invalid request"})
 			return
 		}
-		s.services = group.MakeKVServer(req.Servers, config.Tgid(req.GroupId), req.Me, config.Maxraftstate)
+		s.kv, s.rf = group.MakeKVServer(req.Servers, config.Tgid(req.GroupId), req.Me, config.Maxraftstate)
+		s.svr.Register("KVServer", s.kv)
+		s.svr.Register("Raft", s.rf)
 		s.svr.Start()
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "ok"})

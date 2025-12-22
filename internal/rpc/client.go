@@ -35,6 +35,8 @@ func (c *Client) Call(method string, args any, reply any) bool {
 
 	err := c.conn.Call(method, args, reply)
 	if err != nil {
+		c.conn.Close()
+		c.conn = nil
 		log.Printf("Call error: %v", err)
 		return false
 	}
