@@ -1,33 +1,28 @@
 package main
 
 import (
-	"flag"
-	"log"
+	"fmt"
 )
 
 func main() {
-	flag.Parse()
-	args := flag.Args()
-	if len(args) < 1 {
-		log.Fatal("Use 'shardkv help' for usage information.")
+	if env.Mode == "" {
+		fmt.Println("Usage: shardkv <mode> [args]")
+		fmt.Println("Use 'shardkv help' for more information.")
 	}
-	mode := args[0]
-	modeArgs := args[1:]
-
-	switch mode {
+	switch env.Mode {
 	case "help":
-		log.Println("Usage: shardkv <mode> [args]")
-		log.Println("Modes:")
-		log.Println("  server   Start a shardkv server")
-		log.Println("  ctrler   Start a shardkv controller")
-		log.Println("  client   Start a shardkv client")
+		fmt.Println("Usage: shardkv <mode> [args]")
+		fmt.Println("Modes:")
+		fmt.Println("  server   Start a shardkv server")
+		fmt.Println("  ctrler   Start a shardkv controller")
+		fmt.Println("  client   Start a shardkv client")
 	case "server":
-		startServer(modeArgs)
+		startServer()
 	case "ctrler":
-		startCtrler(modeArgs)
+		startCtrler()
 	case "client":
-		startClient(modeArgs)
+		startClient()
 	default:
-		log.Fatal("Unknown mode: " + mode)
+		fmt.Println("Unknown mode: " + env.Mode)
 	}
 }

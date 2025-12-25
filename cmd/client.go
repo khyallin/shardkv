@@ -54,13 +54,13 @@ func (c *Client) Get(args []string) {
 	fmt.Printf("Get key=%s, value=%s, version=%d\n", key, value, version)
 }
 
-func startClient(servers []string) {
-	if len(servers) < 1 {
-		fmt.Printf("Usage: shardkv client <server1> <server2> ...")
+func startClient() {
+	if env.Servers == nil || len(env.Servers) == 0 {
+		fmt.Println("Usage: shardkv client -servers <server1,server2,...>")
 		return
 	}
-	client := NewClient(servers)
 
+	client := NewClient(env.Servers)
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("Entering interactive mode, type put/get commands, exit to quit:")
 	for {

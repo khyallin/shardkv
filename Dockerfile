@@ -18,4 +18,4 @@ COPY --from=builder /app/shardkv /shardkv
 
 EXPOSE 8000
 
-CMD ["/server"]
+CMD ["/shardkv"]
