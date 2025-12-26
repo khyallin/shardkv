@@ -16,6 +16,6 @@ FROM scratch
 
 COPY --from=builder /app/shardkv /shardkv
 
-EXPOSE 8000
+EXPOSE 8379, 8380
 
 CMD ["/shardkv"]

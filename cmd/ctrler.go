@@ -11,7 +11,12 @@ var defaultConfig = &config.Config{
 	Num:    1,
 	Shards: [config.NShards]config.Tgid{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 	Groups: map[config.Tgid][]string{
-		1: {"shardkv-server-1-0", "shardkv-server-1-1", "shardkv-server-1-2"},
+		1: {"shardkv-server-1-0",
+			"shardkv-server-1-1",
+			"shardkv-server-1-2",
+			"shardkv-server-1-3",
+			"shardkv-server-1-4",
+		},
 	},
 }
 
