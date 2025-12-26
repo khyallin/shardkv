@@ -22,4 +22,5 @@ func rpcServer() {
 	svr.Register("KVServer", kv)
 	svr.Register("Raft", rf)
 	svr.Start()
+	select {}
 }
