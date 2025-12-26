@@ -35,7 +35,7 @@ func NewMemoryKV(gid config.Tgid, me int) *MemoryKV {
 	}
 	for i := 0; i < config.NShards; i++ {
 		kv.data[i] = make(map[string]Record)
-		kv.shardNums[i] = config.NumFirst
+		kv.shardNums[i] = 0
 		if gid == config.Gid0 {
 			kv.shardExts[i] = true
 		}

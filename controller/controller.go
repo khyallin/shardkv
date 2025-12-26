@@ -67,14 +67,8 @@ func (sck *Controller) InitConfig(cfg *config.Config) {
 			break
 		}
 	}
-	for shard, gid := range cfg.Shards {
-		if gid == config.Gid0 {
-			continue
-		}
-		srv, ok := cfg.Groups[gid]
-		if !ok {
-			continue
-		}
+	for shard := range config.NShards {
+		gid, srv, _ := cfg.GidServers(config.Tshid(shard))
 		clerk := group.MakeClerk(gid, srv)
 		err := clerk.InstallShard(config.Tshid(shard), make([]byte, 0), cfg.Num)
 		if err != api.OK {
