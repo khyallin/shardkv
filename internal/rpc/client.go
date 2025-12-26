@@ -25,7 +25,7 @@ func (c *Client) Call(method string, args any, reply any) bool {
 	if c.conn == nil {
 		conn, err := rpc.Dial("tcp", c.server+config.Port)
 		if err != nil {
-			log.Fatal("Dial error:", err)
+			log.Printf("Dial error: %v", err)
 			c.mu.Unlock()
 			return false
 		}
