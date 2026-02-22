@@ -13,12 +13,18 @@ import (
 )
 
 type KVServer struct {
-	me   int
-	dead int32 // set by Kill()
-	rsm  *rsm.RSM
+	me      int
+	dead    int32 // set by Kill()
+	rsm     *rsm.RSM
+	metrics *Metrics
 }
 
 func (kv *KVServer) Get(args *api.GetArgs, reply *api.GetReply) error {
+	start := kv.metrics.OnIngress()
+	defer func() {
+		kv.metrics.OnDone(start, reply.Err)
+	}()
+
 	err, result := kv.rsm.Submit(args)
 	if err != api.OK {
 		reply.Err = err
@@ -32,6 +38,11 @@ func (kv *KVServer) Get(args *api.GetArgs, reply *api.GetReply) error {
 }
 
 func (kv *KVServer) Put(args *api.PutArgs, reply *api.PutReply) error {
+	start := kv.metrics.OnIngress()
+	defer func() {
+		kv.metrics.OnDone(start, reply.Err)
+	}()
+
 	err, result := kv.rsm.Submit(args)
 	if err != api.OK {
 		reply.Err = err
@@ -44,6 +55,11 @@ func (kv *KVServer) Put(args *api.PutArgs, reply *api.PutReply) error {
 // Freeze the specified shard (i.e., reject future Get/Puts for this
 // shard) and return the key/values stored in that shard.
 func (kv *KVServer) FreezeShard(args *rpc.FreezeShardArgs, reply *rpc.FreezeShardReply) error {
+	start := kv.metrics.OnIngress()
+	defer func() {
+		kv.metrics.OnDone(start, reply.Err)
+	}()
+
 	err, result := kv.rsm.Submit(args)
 	if err != api.OK {
 		reply.Err = err
@@ -58,6 +74,11 @@ func (kv *KVServer) FreezeShard(args *rpc.FreezeShardArgs, reply *rpc.FreezeShar
 
 // Install the supplied state for the specified shard.
 func (kv *KVServer) InstallShard(args *rpc.InstallShardArgs, reply *rpc.InstallShardReply) error {
+	start := kv.metrics.OnIngress()
+	defer func() {
+		kv.metrics.OnDone(start, reply.Err)
+	}()
+
 	err, result := kv.rsm.Submit(args)
 	if err != api.OK {
 		reply.Err = err
@@ -69,6 +90,11 @@ func (kv *KVServer) InstallShard(args *rpc.InstallShardArgs, reply *rpc.InstallS
 
 // Delete the specified shard.
 func (kv *KVServer) DeleteShard(args *rpc.DeleteShardArgs, reply *rpc.DeleteShardReply) error {
+	start := kv.metrics.OnIngress()
+	defer func() {
+		kv.metrics.OnDone(start, reply.Err)
+	}()
+
 	err, result := kv.rsm.Submit(args)
 	if err != api.OK {
 		reply.Err = err
@@ -78,17 +104,24 @@ func (kv *KVServer) DeleteShard(args *rpc.DeleteShardArgs, reply *rpc.DeleteShar
 	return nil
 }
 
-// the tester calls Kill() when a KVServer instance won't
-// be needed again. for your convenience, we supply
-// code to set rf.dead (without needing a lock),
-// and a killed() method to test rf.dead in
-// long-running loops. you can also add your own
-// code to Kill(). you're not required to do anything
-// about this, but it may be convenient (for example)
-// to suppress debug output from a Kill()ed instance.
+func (kv *KVServer) Status(args *api.StatusArgs, reply *api.StatusReply) error {
+	view := kv.metrics.View()
+	reply.TotalQPS = view.TotalQPS(10)
+	reply.DoneQPS = view.DoneQPS(10)
+	reply.SuccessQPS = view.SuccessQPS(10)
+	reply.MaxLatency = view.MaxLatency(10)
+	reply.AvgLatency = view.AvgLatency(10)
+	if _, isLeader := kv.rsm.Raft().GetState(); isLeader {
+		reply.Err = api.OK
+	} else {
+		reply.Err = rpc.ErrWrongLeader
+	}
+	return nil
+}
+
+// Kill() is called when a KVServer instance won't be needed again.
 func (kv *KVServer) Kill() {
 	atomic.StoreInt32(&kv.dead, 1)
-	// Your code here, if desired.
 }
 
 func (kv *KVServer) killed() bool {
@@ -110,8 +143,9 @@ func MakeKVServer(servers []string, gid config.Tgid, me int, maxraftstate int) (
 
 	sm := statemachine.NewMemoryKV(gid, me)
 	kv := &KVServer{
-		me:  me,
-		rsm: rsm.MakeRSM(servers, me, maxraftstate, sm),
+		me:      me,
+		rsm:     rsm.MakeRSM(servers, me, maxraftstate, sm),
+		metrics: MakeMetrics(),
 	}
 	return kv, kv.rsm.Raft()
 }

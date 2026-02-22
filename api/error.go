@@ -4,7 +4,7 @@ type Err string
 
 const (
 	// Err's returned by server and Clerk
-	OK        Err = "OK"
+	OK         Err = "OK"
 	ErrNoKey   Err = "ErrNoKey"
 	ErrVersion Err = "ErrVersion"
 

@@ -160,6 +160,27 @@ func (ck *Clerk) DeleteShard(s config.Tshid, num config.Tnum) api.Err {
 	return rpc.ErrWrongGroup
 }
 
+func (ck *Clerk) Status() (TotalQPS float64, DoneQPS float64, SuccessQPS float64, MaxLatency time.Duration, AvgLatency time.Duration, Err api.Err) {
+	args := &api.StatusArgs{}
+	reply := &api.StatusReply{}
+	ddl := time.Now().Add(4 * time.Second)
+
+	log.Printf("GroupClerk%d.Status()|Start", ck.gid)
+	for time.Now().Before(ddl) {
+		peer := ck.peer()
+		ok := ck.clients[peer].Call("KVServer.Status", args, reply)
+		if !ok || reply.Err != api.OK {
+			ck.prvLeader = -1
+			time.Sleep(Interval)
+			continue
+		}
+		ck.prvLeader = peer
+		log.Printf("GroupClerk%d.Status()|End|totalqps=%f|doneqps=%f|successqps=%f|maxlatency=%f|avglatency=%f|err=%v", ck.gid, reply.TotalQPS, reply.DoneQPS, reply.SuccessQPS, reply.MaxLatency, reply.AvgLatency, reply.Err)
+		return reply.TotalQPS, reply.DoneQPS, reply.SuccessQPS, reply.MaxLatency, reply.AvgLatency, reply.Err
+	}
+	return 0, 0, 0, 0, 0, rpc.ErrWrongGroup
+}
+
 type Retry struct {
 	r bool
 }

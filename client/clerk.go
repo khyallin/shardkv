@@ -84,3 +84,27 @@ func (ck *Clerk) Put(key string, value string, version api.Tversion) api.Err {
 		return err
 	}
 }
+
+func (ck *Clerk) Status(gid config.Tgid) (TotalQPS float64, DoneQPS float64, SuccessQPS float64, MaxLatency time.Duration, AvgLatency time.Duration, Err api.Err) {
+	for {
+		if ck.cfg == nil {
+			log.Printf("KVClerk.Status()|UpdateConfig|gid=%d", gid)
+			ck.cfg = ck.ctrler.Query()
+			ck.grpClerks = make(map[config.Tgid]*group.Clerk)
+		}
+
+		grpClerk, ok := ck.grpClerks[gid]
+		if !ok {
+			grpClerk = group.MakeClerk(gid, ck.cfg.Groups[gid])
+			ck.grpClerks[gid] = grpClerk
+		}
+
+		totalQps, doneQps, successQps, maxLatency, avgLatency, err := grpClerk.Status()
+		if err == rpc.ErrWrongGroup {
+			ck.cfg = nil
+			time.Sleep(time.Millisecond * 100)
+			continue
+		}
+		return totalQps, doneQps, successQps, maxLatency, avgLatency, err
+	}
+}
