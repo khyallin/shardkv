@@ -44,6 +44,24 @@ func (ck *Clerk) grpClerk(key string) *group.Clerk {
 	return grpClerk
 }
 
+func (ck *Clerk) grpClerkByGid(gid config.Tgid) *group.Clerk {
+	srvs, ok := ck.cfg.Groups[gid]
+	if !ok {
+		ck.cfg = ck.ctrler.Query()
+		srvs, ok = ck.cfg.Groups[gid]
+		if !ok {
+			log.Fatalf("KVClerk.grpClerkByGid()|UpdateConfig|gid=%d", gid)
+		}
+		log.Printf("KVClerk.grpClerkByGid()|UpdateConfig|gid=%d", gid)
+	}
+	grpClerk, ok := ck.grpClerks[gid]
+	if !ok {
+		grpClerk = group.MakeClerk(gid, srvs)
+		ck.grpClerks[gid] = grpClerk
+	}
+	return grpClerk
+}
+
 func (ck *Clerk) Get(key string) (string, api.Tversion, api.Err) {
 	for {
 		if ck.cfg == nil {
@@ -93,13 +111,7 @@ func (ck *Clerk) Status(gid config.Tgid) (TotalQPS float64, DoneQPS float64, Suc
 			ck.grpClerks = make(map[config.Tgid]*group.Clerk)
 		}
 
-		grpClerk, ok := ck.grpClerks[gid]
-		if !ok {
-			grpClerk = group.MakeClerk(gid, ck.cfg.Groups[gid])
-			ck.grpClerks[gid] = grpClerk
-		}
-
-		totalQps, doneQps, successQps, maxLatency, avgLatency, err := grpClerk.Status()
+		totalQps, doneQps, successQps, maxLatency, avgLatency, err := ck.grpClerkByGid(gid).Status()
 		if err == rpc.ErrWrongGroup {
 			ck.cfg = nil
 			time.Sleep(time.Millisecond * 100)
