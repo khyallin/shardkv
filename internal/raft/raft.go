@@ -380,17 +380,17 @@ func (rf *raft) makeInstallSnapshotArgs(peer int) *InstallSnapshotArgs {
 	return args
 }
 
-func (rf *raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapshotReply) {
+func (rf *raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapshotReply) error {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 
 	if rf.killed() {
-		return
+		return nil
 	}
 
 	if args.Term < rf.currentTerm.Get() {
 		reply.Term = rf.currentTerm.Get()
-		return
+		return nil
 	}
 
 	if args.Term > rf.currentTerm.Get() {
@@ -402,7 +402,7 @@ func (rf *raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 	rf.resetElectionTimer()
 	reply.Term = rf.currentTerm.Get()
 	if args.LastIncludedIndex <= rf.commitIndex {
-		return
+		return nil
 	}
 
 	if args.LastIncludedIndex < rf.log.Len() && rf.log.Term(args.LastIncludedIndex) == args.LastIncludedTerm {
@@ -432,6 +432,7 @@ func (rf *raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 		}
 	}()
 	rf.mu.Lock()
+	return nil
 }
 
 func (rf *raft) sendInstallSnapshot(server int, args *InstallSnapshotArgs, reply *InstallSnapshotReply) bool {

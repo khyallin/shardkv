@@ -22,21 +22,26 @@ func NewClient(server string) *Client {
 
 func (c *Client) Call(method string, args any, reply any) bool {
 	c.mu.Lock()
-	if c.conn == nil {
-		conn, err := rpc.Dial("tcp", c.server+config.Port)
+	conn := c.conn
+	if conn == nil {
+		newConn, err := rpc.Dial("tcp", c.server+config.Port)
 		if err != nil {
 			log.Printf("Dial error: %v", err)
 			c.mu.Unlock()
 			return false
 		}
-		c.conn = conn
+		c.conn, conn = newConn, newConn
 	}
 	c.mu.Unlock()
 
-	err := c.conn.Call(method, args, reply)
+	err := conn.Call(method, args, reply)
 	if err != nil {
-		c.conn.Close()
-		c.conn = nil
+		c.mu.Lock()
+		if c.conn == conn {
+			_ = conn.Close()
+			c.conn = nil
+		}
+		c.mu.Unlock()
 		log.Printf("Call error: %v", err)
 		return false
 	}
