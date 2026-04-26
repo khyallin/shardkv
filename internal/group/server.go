@@ -106,11 +106,11 @@ func (kv *KVServer) DeleteShard(args *rpc.DeleteShardArgs, reply *rpc.DeleteShar
 
 func (kv *KVServer) Status(args *api.StatusArgs, reply *api.StatusReply) error {
 	view := kv.metrics.View()
-	reply.TotalQPS = view.TotalQPS(10)
-	reply.DoneQPS = view.DoneQPS(10)
-	reply.SuccessQPS = view.SuccessQPS(10)
-	reply.MaxLatency = view.MaxLatency(10)
-	reply.AvgLatency = view.AvgLatency(10)
+	reply.TotalQPS = view.TotalQPS(Time)
+	reply.DoneQPS = view.DoneQPS(Time)
+	reply.SuccessQPS = view.SuccessQPS(Time)
+	reply.MaxLatency = view.MaxLatency(Time)
+	reply.AvgLatency = view.AvgLatency(Time)
 	if _, isLeader := kv.rsm.Raft().GetState(); isLeader {
 		reply.Err = api.OK
 	} else {
@@ -129,7 +129,7 @@ func (kv *KVServer) killed() bool {
 	return z == 1
 }
 
-func MakeKVServer(servers []string, gid config.Tgid, me int, maxraftstate int) (*KVServer, raft.Raft) {
+func MakeKVServer(servers []string, gid config.Tgid, me int, maxraftstate int) (*KVServer, *raft.Raft) {
 	gob.Register(&api.GetArgs{})
 	gob.Register(&api.GetReply{})
 	gob.Register(&api.PutArgs{})

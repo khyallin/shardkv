@@ -26,7 +26,7 @@ const (
 )
 
 // A Go object implementing a single Raft peer.
-type raft struct {
+type Raft struct {
 	mu      sync.Mutex    // Lock to protect shared access to this peer's state
 	peers   []*rpc.Client // RPC end points of all peers
 	me      int           // this peer's index into peers[]
@@ -56,14 +56,14 @@ type raft struct {
 
 // return currentTerm and whether this server
 // believes it is the leader.
-func (rf *raft) GetState() (int, bool) {
+func (rf *Raft) GetState() (int, bool) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 	return rf.currentTerm.Get(), rf.state == Leader
 }
 
 // how many bytes in Raft's persisted log?
-func (rf *raft) PersistBytes() int {
+func (rf *Raft) PersistBytes() int {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 	return rf.log.ByteSize()
@@ -73,7 +73,7 @@ func (rf *raft) PersistBytes() int {
 // all info up to and including index. this means the
 // service no longer needs the log through (and including)
 // that index. Raft should now trim its log as much as possible.
-func (rf *raft) Snapshot(index int, snapshot []byte) {
+func (rf *Raft) Snapshot(index int, snapshot []byte) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 
@@ -98,7 +98,7 @@ type RequestVoteReply struct {
 	VoteGranted bool
 }
 
-func (rf *raft) makeRequestVoteArgs() *RequestVoteArgs {
+func (rf *Raft) makeRequestVoteArgs() *RequestVoteArgs {
 	args := &RequestVoteArgs{
 		Term:         rf.currentTerm.Get(),
 		CandidateId:  rf.me,
@@ -108,7 +108,7 @@ func (rf *raft) makeRequestVoteArgs() *RequestVoteArgs {
 	return args
 }
 
-func (rf *raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) error {
+func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) error {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 
@@ -174,12 +174,12 @@ func (rf *raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) erro
 // capitalized all field names in structs passed over RPC, and
 // that the caller passes the address of the reply struct with &, not
 // the struct itself.
-func (rf *raft) sendRequestVote(server int, args *RequestVoteArgs, reply *RequestVoteReply) bool {
+func (rf *Raft) sendRequestVote(server int, args *RequestVoteArgs, reply *RequestVoteReply) bool {
 	ok := rf.peers[server].Call("Raft.RequestVote", args, reply)
 	return ok
 }
 
-func (rf *raft) handleRequestVoteReply(peer int, args *RequestVoteArgs, reply *RequestVoteReply, votesReceived *int) {
+func (rf *Raft) handleRequestVoteReply(peer int, args *RequestVoteArgs, reply *RequestVoteReply, votesReceived *int) {
 	if rf.state != Candidate || args.Term != rf.currentTerm.Get() {
 		return
 	}
@@ -226,7 +226,7 @@ type AppendEntriesReply struct {
 	Xlen    int
 }
 
-func (rf *raft) makeAppendEntriesArgs(peer int) *AppendEntriesArgs {
+func (rf *Raft) makeAppendEntriesArgs(peer int) *AppendEntriesArgs {
 	args := &AppendEntriesArgs{
 		Term:         rf.currentTerm.Get(),
 		LeaderId:     rf.me,
@@ -238,7 +238,7 @@ func (rf *raft) makeAppendEntriesArgs(peer int) *AppendEntriesArgs {
 	return args
 }
 
-func (rf *raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) error {
+func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) error {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 
@@ -309,12 +309,12 @@ func (rf *raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	return nil
 }
 
-func (rf *raft) sendAppendEntries(server int, args *AppendEntriesArgs, reply *AppendEntriesReply) bool {
+func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs, reply *AppendEntriesReply) bool {
 	ok := rf.peers[server].Call("Raft.AppendEntries", args, reply)
 	return ok
 }
 
-func (rf *raft) handleAppendEntriesReply(peer int, args *AppendEntriesArgs, reply *AppendEntriesReply) {
+func (rf *Raft) handleAppendEntriesReply(peer int, args *AppendEntriesArgs, reply *AppendEntriesReply) {
 	if rf.state != Leader || args.Term != rf.currentTerm.Get() {
 		return
 	}
@@ -369,7 +369,7 @@ type InstallSnapshotReply struct {
 	Term int
 }
 
-func (rf *raft) makeInstallSnapshotArgs(peer int) *InstallSnapshotArgs {
+func (rf *Raft) makeInstallSnapshotArgs(peer int) *InstallSnapshotArgs {
 	args := &InstallSnapshotArgs{
 		Term:              rf.currentTerm.Get(),
 		LeaderId:          rf.me,
@@ -380,7 +380,7 @@ func (rf *raft) makeInstallSnapshotArgs(peer int) *InstallSnapshotArgs {
 	return args
 }
 
-func (rf *raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapshotReply) error {
+func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapshotReply) error {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 
@@ -435,12 +435,12 @@ func (rf *raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 	return nil
 }
 
-func (rf *raft) sendInstallSnapshot(server int, args *InstallSnapshotArgs, reply *InstallSnapshotReply) bool {
+func (rf *Raft) sendInstallSnapshot(server int, args *InstallSnapshotArgs, reply *InstallSnapshotReply) bool {
 	ok := rf.peers[server].Call("Raft.InstallSnapshot", args, reply)
 	return ok
 }
 
-func (rf *raft) handleInstallSnapshotReply(peer int, args *InstallSnapshotArgs, reply *InstallSnapshotReply) {
+func (rf *Raft) handleInstallSnapshotReply(peer int, args *InstallSnapshotArgs, reply *InstallSnapshotReply) {
 	if rf.state != Leader || args.Term != rf.currentTerm.Get() {
 		return
 	}
@@ -469,7 +469,7 @@ func (rf *raft) handleInstallSnapshotReply(peer int, args *InstallSnapshotArgs, 
 // if it's ever committed. the second return value is the current
 // term. the third return value is true if this server believes it is
 // the leader.
-func (rf *raft) Start(command interface{}) (int, int, bool) {
+func (rf *Raft) Start(command interface{}) (int, int, bool) {
 	rf.mu.Lock()
 
 	if rf.state != Leader {
@@ -498,17 +498,17 @@ func (rf *raft) Start(command interface{}) (int, int, bool) {
 // up CPU time, perhaps causing later tests to fail and generating
 // confusing debug output. any goroutine with a long-running loop
 // should call killed() to check whether it should stop.
-func (rf *raft) Kill() {
+func (rf *Raft) Kill() {
 	atomic.StoreInt32(&rf.dead, 1)
 	close(rf.applyCh)
 }
 
-func (rf *raft) killed() bool {
+func (rf *Raft) killed() bool {
 	z := atomic.LoadInt32(&rf.dead)
 	return z == 1
 }
 
-func (rf *raft) ticker() {
+func (rf *Raft) ticker() {
 	for !rf.killed() {
 		select {
 		case <-rf.electionTimer.C:
@@ -519,7 +519,7 @@ func (rf *raft) ticker() {
 	}
 }
 
-func (rf *raft) startElection() {
+func (rf *Raft) startElection() {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 
@@ -550,7 +550,7 @@ func (rf *raft) startElection() {
 	}
 }
 
-func (rf *raft) broadcastHeartbeat(isheartbeat bool) {
+func (rf *Raft) broadcastHeartbeat(isheartbeat bool) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 
@@ -571,7 +571,7 @@ func (rf *raft) broadcastHeartbeat(isheartbeat bool) {
 	}
 }
 
-func (rf *raft) applier() {
+func (rf *Raft) applier() {
 	defer func() { recover() }()
 
 	for !rf.killed() {
@@ -600,7 +600,7 @@ func (rf *raft) applier() {
 	}
 }
 
-func (rf *raft) replicator(peer int) {
+func (rf *Raft) replicator(peer int) {
 	for !rf.killed() {
 		rf.mu.Lock()
 		for rf.state != Leader || rf.nextIndex[peer] >= rf.log.Len() {
@@ -611,7 +611,7 @@ func (rf *raft) replicator(peer int) {
 	}
 }
 
-func (rf *raft) replicateOnce(peer int) {
+func (rf *Raft) replicateOnce(peer int) {
 	rf.mu.Lock()
 	if rf.state != Leader {
 		rf.mu.Unlock()
@@ -638,7 +638,7 @@ func (rf *raft) replicateOnce(peer int) {
 	}
 }
 
-func (rf *raft) advanceCommitIndex() {
+func (rf *Raft) advanceCommitIndex() {
 	for N := rf.log.Len() - 1; N > rf.commitIndex; N-- {
 		if rf.log.Term(N) != rf.currentTerm.Get() {
 			continue
@@ -666,7 +666,7 @@ func (rf *raft) advanceCommitIndex() {
 // tester or service expects Raft to send ApplyMsg messages.
 // Make() must return quickly, so it should start goroutines
 // for any long-running work.
-func Make(servers []string, me int, snapshot *persist.Block, applyCh chan ApplyMsg) *raft {
+func Make(servers []string, me int, snapshot *persist.Block, applyCh chan ApplyMsg) *Raft {
 	gob.Register(AppendEntriesArgs{})
 	gob.Register(AppendEntriesReply{})
 	gob.Register(RequestVoteArgs{})
@@ -674,7 +674,7 @@ func Make(servers []string, me int, snapshot *persist.Block, applyCh chan ApplyM
 	gob.Register(InstallSnapshotArgs{})
 	gob.Register(InstallSnapshotReply{})
 
-	rf := &raft{
+	rf := &Raft{
 		peers:   make([]*rpc.Client, len(servers)),
 		me:      me,
 		applyCh: applyCh,

@@ -31,7 +31,7 @@ type StateMachine interface {
 type RSM struct {
 	mu           sync.Mutex
 	me           int
-	rf           raft.Raft
+	rf           *raft.Raft
 	applyCh      chan raft.ApplyMsg
 	maxraftstate int // snapshot if log grows this big
 	sm           StateMachine
@@ -77,7 +77,7 @@ func MakeRSM(servers []string, me int, maxraftstate int, sm StateMachine) *RSM {
 	return rsm
 }
 
-func (rsm *RSM) Raft() raft.Raft {
+func (rsm *RSM) Raft() *raft.Raft {
 	return rsm.rf
 }
 

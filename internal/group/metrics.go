@@ -7,7 +7,10 @@ import (
 	"github.com/khyallin/shardkv/api"
 )
 
-const Size = 60
+const (
+	Size = 60
+	Time = 60
+)
 
 type metricsBucket struct {
 	sec          int64
@@ -64,16 +67,16 @@ func (m *Metrics) View() *MetricsView {
 
 	m.mu.Lock()
 	view := &MetricsView{
-		nowSec:   nowSec,
-		buckets:  m.buckets,
+		nowSec:  nowSec,
+		buckets: m.buckets,
 	}
 	m.mu.Unlock()
 	return view
 }
 
 type MetricsView struct {
-	nowSec   int64
-	buckets  [Size]metricsBucket
+	nowSec  int64
+	buckets [Size]metricsBucket
 }
 
 func (v *MetricsView) TotalQPS(seconds int) float64 {

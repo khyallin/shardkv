@@ -10,7 +10,7 @@ func electionTimeout() time.Duration {
 	return time.Duration(ms) * time.Millisecond
 }
 
-func (rf *raft) resetElectionTimer() {
+func (rf *Raft) resetElectionTimer() {
 	if !rf.electionTimer.Stop() {
 		select {
 		case <-rf.electionTimer.C:
@@ -25,7 +25,7 @@ func heartbeatTimeout() time.Duration {
 	return time.Duration(ms) * time.Millisecond
 }
 
-func (rf *raft) resetHeartbeatTimer() {
+func (rf *Raft) resetHeartbeatTimer() {
 	if !rf.heartbeatTimer.Stop() {
 		select {
 		case <-rf.heartbeatTimer.C:

@@ -26,11 +26,26 @@ func MakeController(servers []string) *Controller {
 func (sck *Controller) InitController() {
 	log.Printf("Controller.InitController()|Start")
 
-	new, newVersion := sck.getNextConfig()
-	if new == nil {
-		return
+	var new, old *config.Config
+	var newVersion, oldVersion api.Tversion
+	for {
+		var err api.Err
+		new, newVersion, err = sck.getNextConfig()
+		if err != api.OK {
+			log.Printf("Controller.InitController()|Fail|err=%v", err)
+			continue
+		}
+		if new == nil {
+			return
+		}
+
+		old, oldVersion, err = sck.getCurConfig()
+		if err != api.OK {
+			log.Printf("Controller.InitController()|Fail|err=%v", err)
+			continue
+		}
+		break
 	}
-	old, oldVersion := sck.getCurConfig()
 
 	ok := sck.moveShards(old, new)
 	if !ok {
@@ -80,15 +95,23 @@ func (sck *Controller) InitConfig(cfg *config.Config) {
 
 // To change the configuration from the current one to new.
 func (sck *Controller) ChangeConfigTo(new *config.Config) {
-	old, oldVersion := sck.getCurConfig()
+	old, oldVersion, err := sck.getCurConfig()
+	if err != api.OK {
+		log.Printf("Controller.ChangeConfigTo()|Fail|err=%v", err)
+		return
+	}
 	log.Printf("Controller.ChangeConfigTo()|Start|From=%s|To=%s", old.String(), new.String())
 
-	next, newVersion := sck.getNextConfig()
+	next, newVersion, err := sck.getNextConfig()
+	if err != api.OK {
+		log.Printf("Controller.ChangeConfigTo()|Fail|err=%v", err)
+		return
+	}
 	if next != nil {
 		log.Printf("Controller.ChangeConfigTo()|InProgress|To=%s", new.String())
 		return
 	}
-	err := sck.putNextConfig(new, newVersion)
+	err = sck.putNextConfig(new, newVersion)
 	if err == api.ErrVersion {
 		log.Printf("Controller.ChangeConfigTo()|InProgress|To=%s", new.String())
 		return
@@ -113,7 +136,14 @@ func (sck *Controller) ChangeConfigTo(new *config.Config) {
 
 // Return the current configuration
 func (sck *Controller) Query() *config.Config {
-	cfg, _ := sck.getCurConfig()
+	var cfg *config.Config
+	for {
+		var err api.Err
+		cfg, _, err = sck.getCurConfig()
+		if err == api.OK {
+			break
+		}
+	}
 	return cfg
 }
 
@@ -157,27 +187,29 @@ func (sck *Controller) moveShards(old, new *config.Config) bool {
 	return true
 }
 
-func (sck *Controller) getCurConfig() (*config.Config, api.Tversion) {
+func (sck *Controller) getCurConfig() (*config.Config, api.Tversion, api.Err) {
 	value, version, err := sck.Get("config")
 	if err != api.OK {
-		log.Fatalf("Controller.getCurConfig()|Get|Fail|err=%v", err)
+		log.Printf("Controller.getCurConfig()|Get|Fail|err=%v", err)
+		return nil, version, err
 	}
 	cfg := config.FromString(value)
 	log.Printf("Controller.getCurConfig()|OK|Config=%s", cfg.String())
-	return cfg, version
+	return cfg, version, api.OK
 }
 
-func (sck *Controller) getNextConfig() (*config.Config, api.Tversion) {
+func (sck *Controller) getNextConfig() (*config.Config, api.Tversion, api.Err) {
 	value, version, err := sck.Get("next")
 	if err == api.ErrNoKey || value == "" {
-		return nil, version
+		return nil, version, api.OK
 	}
 	if err != api.OK {
-		log.Fatalf("Controller.getNextConfig()|Fail|err=%v", err)
+		log.Printf("Controller.getNextConfig()|Fail|err=%v", err)
+		return nil, version, err
 	}
 	cfg := config.FromString(value)
 	log.Printf("Controller.getNextConfig()|OK|Config=%s", cfg.String())
-	return cfg, version
+	return cfg, version, api.OK
 }
 
 func (sck *Controller) putCurConfig(cfg *config.Config, version api.Tversion) api.Err {
@@ -187,7 +219,8 @@ func (sck *Controller) putCurConfig(cfg *config.Config, version api.Tversion) ap
 	if err == api.ErrMaybe {
 		val, _, err := sck.Get("config")
 		if err != api.OK {
-			log.Fatalf("Controller.putCurConfig()|Fail")
+			log.Printf("Controller.putCurConfig()|Fail|err=%v", err)
+			return err
 		}
 		if value == val {
 			err = api.OK
@@ -206,7 +239,8 @@ func (sck *Controller) putNextConfig(cfg *config.Config, version api.Tversion) a
 	if err == api.ErrMaybe {
 		val, _, err := sck.Get("next")
 		if err != api.OK {
-			log.Fatalf("")
+			log.Printf("Controller.putNextConfig()|Fail|err=%v", err)
+			return err
 		}
 		if value == val {
 			err = api.OK
@@ -224,7 +258,8 @@ func (sck *Controller) deleteNextConfig(version api.Tversion) api.Err {
 	if err == api.ErrMaybe {
 		value, _, err := sck.Get("next")
 		if err != api.OK {
-			log.Fatalf("")
+			log.Printf("Controller.deleteNextConfig()|Fail|err=%v", err)
+			return err
 		}
 		if value == "" {
 			err = api.OK
